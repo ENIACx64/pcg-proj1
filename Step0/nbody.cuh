@@ -1,12 +1,12 @@
 /**
  * @file      nbody.cuh
  *
- * @author    Name Surname \n
+ * @author    Jindrich Vodak \n
  *            Faculty of Information Technology \n
  *            Brno University of Technology \n
- *            xlogin00@fit.vutbr.cz
+ *            xvodak06@stud.fit.vutbr.cz
  *
-* @brief     PCG - Assignment 1 / GPU Step 0
+ * @brief     PCG - Assignment 1 / GPU Step 0
  *
  * @version   2025
  *
@@ -26,8 +26,39 @@ struct Particles
   /********************************************************************************************************************/
   /*                             TODO: Particle data structure optimized for use on GPU                               */
   /********************************************************************************************************************/
+  // positions
+  float *posX;
+  float *posY;
+  float *posZ;
 
+  // velocities
+  float *velX;
+  float *velY;
+  float *velZ;
 
+  // masses
+  float *mass;
+
+  // strides
+  std::size_t posXStride{1};
+  std::size_t posYStride{1};
+  std::size_t posZStride{1};
+  std::size_t velXStride{1};
+  std::size_t velYStride{1};
+  std::size_t velZStride{1};
+  std::size_t massStride{1};
+
+  // offsets
+  std::size_t posXOffset{0};
+  std::size_t posYOffset{0};
+  std::size_t posZOffset{0};
+  std::size_t velXOffset{0};
+  std::size_t velYOffset{0};
+  std::size_t velZOffset{0};
+  std::size_t massOffset{0};
+
+  // particle count
+  std::size_t N{0};
 
   /********************************************************************************************************************/
 };
@@ -40,8 +71,25 @@ struct Velocities
   /********************************************************************************************************************/
   /*                             TODO: Velocities data structure optimized for use on GPU                             */
   /********************************************************************************************************************/
+  // deltas
+  float *deltaX;
+  float *deltaY;
+  float *deltaZ;
 
+  // strides
+  std::size_t deltaXStride{1};
+  std::size_t deltaYStride{1};
+  std::size_t deltaZStride{1};
 
+  // offsets
+  std::size_t deltaXOffset{0};
+  std::size_t deltaYOffset{0};
+  std::size_t deltaZOffset{0};
+
+  // offsets
+
+  // count
+  std::size_z N{0};
 
   /********************************************************************************************************************/
 };
