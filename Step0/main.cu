@@ -15,7 +15,10 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
+#include <cstdlib>
+#include <iterator>
 #include <string>
 
 #include "h5Helper.h"
@@ -84,8 +87,15 @@ int main(const int argc, char **argv)
   /********************************************************************************************************************/
   /*                              TODO: CPU side memory allocation (pinned)                                           */
   /********************************************************************************************************************/
+  hParticles.posX = (float *) malloc(N * sizeof(float));
+  hParticles.posY = (float *) malloc(N * sizeof(float));
+  hParticles.posZ = (float *) malloc(N * sizeof(float));
 
+  hParticles.velX = (float *) malloc(N * sizeof(float));
+  hParticles.velY = (float *) malloc(N * sizeof(float));
+  hParticles.velZ = (float *) malloc(N * sizeof(float));
 
+  hParticles.weight = (float *) malloc(N * sizeof(float));
 
   /********************************************************************************************************************/
   /*                              TODO: Fill memory descriptor layout                                                 */
@@ -97,13 +107,13 @@ int main(const int argc, char **argv)
    *         Data pointer   consecutive elements   element in FLOATS
    *                        in FLOATS (not bytes)  (not bytes)
    */
-  MemDesc md(nullptr,       0,                     0,
-             nullptr,       0,                     0,
-             nullptr,       0,                     0,
-             nullptr,       0,                     0,
-             nullptr,       0,                     0,
-             nullptr,       0,                     0,
-             nullptr,       0,                     0,
+  MemDesc md(hParticles.posX,       1,                     0,
+             hParticles.posY,       1,                     0,
+             hParticles.posZ,       1,                     0,
+             hParticles.velX,       1,                     0,
+             hParticles.velY,       1,                     0,
+             hParticles.velZ,       1,                     0,
+             hParticles.weight,     1,                     0,
              N,
              recordsCount);
   /********************************************************************************************************************/
@@ -128,14 +138,28 @@ int main(const int argc, char **argv)
   /********************************************************************************************************************/
   /*                                     TODO: GPU side memory allocation                                             */
   /********************************************************************************************************************/
+  cudaMalloc<float>(&(dParticles.posX), (size_t) (N * sizeof(float)));
+  cudaMalloc<float>(&(dParticles.posY), (size_t) (N * sizeof(float)));
+  cudaMalloc<float>(&(dParticles.posZ), (size_t) (N * sizeof(float)));
 
+  cudaMalloc<float>(&(dParticles.velX), (size_t) (N * sizeof(float)));
+  cudaMalloc<float>(&(dParticles.velY), (size_t) (N * sizeof(float)));
+  cudaMalloc<float>(&(dParticles.velZ), (size_t) (N * sizeof(float)));
+
+  cudaMalloc<float>(&(dParticles.weight), (size_t) (N * sizeof(float)));
   
-
   /********************************************************************************************************************/
   /*                                     TODO: Memory transfer CPU -> GPU                                             */
   /********************************************************************************************************************/
+  cudaMemCpy(dParticles.posX, hParticles.posX, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemCpy(dParticles.posY, hParticles.posY, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemCpy(dParticles.posZ, hParticles.posZ, N * sizeof(float), cudaMemcpyHostToDevice);
 
+  cudaMemCpy(dParticles.velX, hParticles.velX, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemCpy(dParticles.velY, hParticles.velY, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemCpy(dParticles.velZ, hParticles.velZ, N * sizeof(float), cudaMemcpyHostToDevice);
 
+  cudaMemCpy(dParticles.weight, hParticles.weight, N * sizeof(float), cudaMemcpyHostToDevice);
 
   /********************************************************************************************************************/
 
@@ -147,8 +171,9 @@ int main(const int argc, char **argv)
     /******************************************************************************************************************/
     /*                                     TODO: GPU kernels invocation                                               */
     /******************************************************************************************************************/
-
-
+    calculateGravitationVelocity<<<simGridDim, simBlockDim>>>(dParticles, dTmpVelocities, N, dt);
+    calculateCollisionVelocity<<<simGridDim, simBlockDim>>>(dParticles, dTmpVelocities, N);
+    updateParticles<<<simGridDim, simBlockDim>>>(dParticles, dTmpVelocities, N, dt);
 
     /******************************************************************************************************************/
   }
@@ -166,8 +191,15 @@ int main(const int argc, char **argv)
   /********************************************************************************************************************/
   /*                                     TODO: Memory transfer GPU -> CPU                                             */
   /********************************************************************************************************************/
+  cudaMemCpy(hParticles.posX, dParticles.posX, N * sizeof(float), cudaMemCpyDeviceToHost);
+  cudaMemCpy(hParticles.posY, dParticles.posY, N * sizeof(float), cudaMemCpyDeviceToHost);
+  cudaMemCpy(hParticles.posZ, dParticles.posZ, N * sizeof(float), cudaMemCpyDeviceToHost);
 
+  cudaMemCpy(hParticles.velX, dParticles.velX, N * sizeof(float), cudaMemCpyDeviceToHost);
+  cudaMemCpy(hParticles.velY, dParticles.velY, N * sizeof(float), cudaMemCpyDeviceToHost);
+  cudaMemCpy(hParticles.velZ, dParticles.velZ, N * sizeof(float), cudaMemCpyDeviceToHost);
 
+  cudaMemCpy(hParticles.weight, dParticles.weight, N * sizeof(float), cudaMemCpyDeviceToHost);
 
   /********************************************************************************************************************/
 
