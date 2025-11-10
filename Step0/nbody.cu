@@ -51,6 +51,7 @@ __global__ void calculateGravitationVelocity(Particles p, const Velocities tmpVe
 
     for (int i = 0; i < N; i++)
     {
+      // calculating position differences
       float dx = posX - p.posX[i];
       float dy = posY - p.posY[i];
       float dz = posZ - p.posZ[i];
@@ -67,6 +68,7 @@ __global__ void calculateGravitationVelocity(Particles p, const Velocities tmpVe
       newVelZ += r > COLLISION_DISTANCE ? (f * dx / (r + FLT_MIN)) * (dt / p.weight[globalThreadIdx]) : 0.f;
     }
 
+    // saving tmpVel
     tmpVel.x[globalThreadIdx] = newVelX;
     tmpVel.y[globalThreadIdx] = newVelY;
     tmpVel.z[globalThreadIdx] = newVelZ;
@@ -104,10 +106,40 @@ __global__ void calculateCollisionVelocity(Particles p, const Velocities tmpVel,
 
     float weight = p.weight[globalThreadIdx];
 
+    float newVelX{};
+    float newVelY{};
+    float newVelZ{};
+
     for (int i = 0; i < N; i++)
     {
-      
+      // preloading certain important values
+      float velXi = p.velX[i];
+      float velYi = p.velY[i];
+      float velZi = p.velZ[i];
+
+      float weighti = p.weight[i];
+
+      // calculating position differences
+      float dx = posX - p.posX[i];
+      float dy = posY - p.posY[i];
+      float dz = posZ - p.posZ[i];
+
+      // calculating r as shown in the CPU version
+      float r2 = dx * dx + dy * dy + dz * dz;
+      float r  = std::sqrt(r2);
+
+      float weightsSum = weight + weighti;
+      float weightsDifference = weight - weighti;
+
+      newVelX += r > COLLISION_DISTANCE ? ((velX * weightsDifference + weighti * 2 * velXi) / weightsSum) : 0.f;
+      newVelY += r > COLLISION_DISTANCE ? ((velY * weightsDifference + weighti * 2 * velYi) / weightsSum) : 0.f;
+      newVelZ += r > COLLISION_DISTANCE ? ((velZ * weightsDifference + weighti * 2 * velZi) / weightsSum) : 0.f;
     }
+
+    // saving tmpVel
+    tmpVel.x[globalThreadIdx] = newVelX;
+    tmpVel.y[globalThreadIdx] = newVelY;
+    tmpVel.z[globalThreadIdx] = newVelZ;
   }
 
   /********************************************************************************************************************/
@@ -127,51 +159,14 @@ __global__ void updateParticles(Particles p, const Velocities tmpVel, const unsi
   /********************************************************************************************************************/
   /*             TODO: CUDA kernel to update particles velocities and positions, see reference CPU version            */
   /********************************************************************************************************************/
-  float* const pPosX   = p.posX;
-  float* const pPosY   = p.posY;
-  float* const pPosZ   = p.posZ;
-  float* const pVelX   = p.velX;
-  float* const pVelY   = p.velY;
-  float* const pVelZ   = p.velZ;
+  int globalThreadIdx = blockIdx.x * blockDim.x + threadIdx.x;
+  p.velX[globalThreadIdx] += tmpVel.x[globalThreadIdx];
+  p.velY[globalThreadIdx] += tmpVel.y[globalThreadIdx];
+  p.velZ[globalThreadIdx] += tmpVel.z[globalThreadIdx];
 
-  const float* const tmpVelX = tmpVel.x;
-  const float* const tmpVelY = tmpVel.y;
-  const float* const tmpVelZ = tmpVel.z;
-
-  #pragma omp parallel for simd \
-         firstprivate(pPosX, pPosY, pPosZ, pVelX, pVelY, pVelZ, tmpVelX, tmpVelY, tmpVelZ, N, dt) \
-         aligned(pPosX, pPosY, pPosZ, pVelX, pVelY, pVelZ, tmpVelX, tmpVelY, tmpVelZ: dataAlignment) \
-         default(none)
-  for (unsigned i = 0u; i < N; ++i)
-  {
-    float posX = pPosX[i];
-    float posY = pPosY[i];
-    float posZ = pPosZ[i];
-
-    float velX = pVelX[i];
-    float velY = pVelY[i];
-    float velZ = pVelZ[i];
-
-    const float newVelX = tmpVelX[i];
-    const float newVelY = tmpVelY[i];
-    const float newVelZ = tmpVelZ[i];
-
-    velX += newVelX;
-    velY += newVelY;
-    velZ += newVelZ;
-
-    posX += velX * dt;
-    posY += velY * dt;
-    posZ += velZ * dt;
-
-    pPosX[i] = posX;
-    pPosY[i] = posY;
-    pPosZ[i] = posZ;
-
-    pVelX[i] = velX;
-    pVelY[i] = velY;
-    pVelZ[i] = velZ;
-  }
+  p.posX[globalThreadIdx] += p.velX[globalThreadIdx] * dt;
+  p.posY[globalThreadIdx] += p.velY[globalThreadIdx] * dt;
+  p.posZ[globalThreadIdx] += p.velZ[globalThreadIdx] * dt;
 
   /********************************************************************************************************************/
 
