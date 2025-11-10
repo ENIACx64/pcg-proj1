@@ -151,15 +151,15 @@ int main(const int argc, char **argv)
   /********************************************************************************************************************/
   /*                                     TODO: Memory transfer CPU -> GPU                                             */
   /********************************************************************************************************************/
-  cudaMemCpy(dParticles.posX, hParticles.posX, N * sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemCpy(dParticles.posY, hParticles.posY, N * sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemCpy(dParticles.posZ, hParticles.posZ, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dParticles.posX, hParticles.posX, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dParticles.posY, hParticles.posY, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dParticles.posZ, hParticles.posZ, N * sizeof(float), cudaMemcpyHostToDevice);
 
-  cudaMemCpy(dParticles.velX, hParticles.velX, N * sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemCpy(dParticles.velY, hParticles.velY, N * sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemCpy(dParticles.velZ, hParticles.velZ, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dParticles.velX, hParticles.velX, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dParticles.velY, hParticles.velY, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dParticles.velZ, hParticles.velZ, N * sizeof(float), cudaMemcpyHostToDevice);
 
-  cudaMemCpy(dParticles.weight, hParticles.weight, N * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dParticles.weight, hParticles.weight, N * sizeof(float), cudaMemcpyHostToDevice);
 
   /********************************************************************************************************************/
 
@@ -191,15 +191,15 @@ int main(const int argc, char **argv)
   /********************************************************************************************************************/
   /*                                     TODO: Memory transfer GPU -> CPU                                             */
   /********************************************************************************************************************/
-  cudaMemCpy(hParticles.posX, dParticles.posX, N * sizeof(float), cudaMemCpyDeviceToHost);
-  cudaMemCpy(hParticles.posY, dParticles.posY, N * sizeof(float), cudaMemCpyDeviceToHost);
-  cudaMemCpy(hParticles.posZ, dParticles.posZ, N * sizeof(float), cudaMemCpyDeviceToHost);
+  cudaMemcpy(hParticles.posX, dParticles.posX, N * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.posY, dParticles.posY, N * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.posZ, dParticles.posZ, N * sizeof(float), cudaMemcpyDeviceToHost);
 
-  cudaMemCpy(hParticles.velX, dParticles.velX, N * sizeof(float), cudaMemCpyDeviceToHost);
-  cudaMemCpy(hParticles.velY, dParticles.velY, N * sizeof(float), cudaMemCpyDeviceToHost);
-  cudaMemCpy(hParticles.velZ, dParticles.velZ, N * sizeof(float), cudaMemCpyDeviceToHost);
+  cudaMemcpy(hParticles.velX, dParticles.velX, N * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.velY, dParticles.velY, N * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.velZ, dParticles.velZ, N * sizeof(float), cudaMemcpyDeviceToHost);
 
-  cudaMemCpy(hParticles.weight, dParticles.weight, N * sizeof(float), cudaMemCpyDeviceToHost);
+  cudaMemcpy(hParticles.weight, dParticles.weight, N * sizeof(float), cudaMemcpyDeviceToHost);
 
   /********************************************************************************************************************/
 

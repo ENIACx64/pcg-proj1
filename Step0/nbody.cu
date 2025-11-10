@@ -35,59 +35,42 @@ __global__ void calculateGravitationVelocity(Particles p, const Velocities tmpVe
   /********************************************************************************************************************/
   /*              TODO: CUDA kernel to calculate gravitation velocity, see reference CPU version                      */
   /********************************************************************************************************************/
-  const float* const pPosX = p.posX;
-  const float* const pPosY = p.posY;
-  const float* const pPosZ = p.posZ;
-  const float* const pWeight = p.weight;
+  // getting thread ID
+  int globalThreadIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  float* const tmpVelX = tmpVel.x;
-  float* const tmpVelY = tmpVel.y;
-  float* const tmpVelZ = tmpVel.z;
-
-  #pragma omp parallel for firstprivate(pPosX, pPosY, pPosZ, pWeight, tmpVelX, tmpVelY, tmpVelZ, N, dt) default(none)
-  for (unsigned i = 0u; i < N; ++i)
+  // if in range, continue
+  if (globalThreadIdx < N)
   {
+    float posX = p.posX[globalThreadIdx];
+    float posY = p.posY[globalThreadIdx];
+    float posZ = p.posZ[globalThreadIdx];
+
     float newVelX{};
     float newVelY{};
     float newVelZ{};
 
-    const float posX   = pPosX[i];
-    const float posY   = pPosY[i];
-    const float posZ   = pPosZ[i];
-    const float mass = pWeight[i];
-
-    #pragma omp simd aligned(pPosX, pPosY, pPosZ, pWeight, tmpVelX, tmpVelY, tmpVelZ: dataAlignment) \
-                     reduction(+:newVelX, newVelY, newVelZ)
-    for (unsigned j = 0u; j < N; ++j)
+    for (int i = 0; i < N; i++)
     {
-      const float otherPosX   = pPosX[j];
-      const float otherPosY   = pPosY[j];
-      const float otherPosZ   = pPosZ[j];
-      const float otherWeight = pWeight[j];
+      float dx = posX - p.posX[i];
+      float dy = posY - p.posY[i];
+      float dz = posZ - p.posZ[i];
 
-      const float dx = otherPosX - posX;
-      const float dy = otherPosY - posY;
-      const float dz = otherPosZ - posZ;
+      // calculating r as shown in the CPU version
+      float r2 = dx * dx + dy * dy + dz * dz;
+      float r  = std::sqrt(r2);
 
-      const float r2 = dx * dx + dy * dy + dz * dz;
-      const float r  = std::sqrt(r2);
+      // calculating f
+      float f = -G * p.weight[globalThreadIdx] * p.weight[i] / (r2 + FLT_MIN);
 
-      const float f = G * mass * otherWeight / r2;
-
-      newVelX += r > COLLISION_DISTANCE ? dx / r * f : 0.f;
-      newVelY += r > COLLISION_DISTANCE ? dy / r * f : 0.f;
-      newVelZ += r > COLLISION_DISTANCE ? dz / r * f : 0.f;
+      newVelX += r > COLLISION_DISTANCE ? (f * dx / (r + FLT_MIN)) * (dt / p.weight[globalThreadIdx]) : 0.f;
+      newVelY += r > COLLISION_DISTANCE ? (f * dx / (r + FLT_MIN)) * (dt / p.weight[globalThreadIdx]) : 0.f;
+      newVelZ += r > COLLISION_DISTANCE ? (f * dx / (r + FLT_MIN)) * (dt / p.weight[globalThreadIdx]) : 0.f;
     }
 
-    newVelX *= dt / mass;
-    newVelY *= dt / mass;
-    newVelZ *= dt / mass;
-
-    tmpVelX[i] = newVelX;
-    tmpVelY[i] = newVelY;
-    tmpVelZ[i] = newVelZ;
+    tmpVel.x[globalThreadIdx] = newVelX;
+    tmpVel.y[globalThreadIdx] = newVelY;
+    tmpVel.z[globalThreadIdx] = newVelZ;
   }
-
 
   /********************************************************************************************************************/
   
@@ -105,71 +88,27 @@ __global__ void calculateCollisionVelocity(Particles p, const Velocities tmpVel,
   /********************************************************************************************************************/
   /*              TODO: CUDA kernel to calculate collision velocity, see reference CPU version                        */
   /********************************************************************************************************************/
-  const float* const pPosX   = p.posX;
-  const float* const pPosY   = p.posY;
-  const float* const pPosZ   = p.posZ;
-  const float* const pVelX   = p.velX;
-  const float* const pVelY   = p.velY;
-  const float* const pVelZ   = p.velZ;
-  const float* const pWeight = p.weight;
+  // getting thread ID
+  int globalThreadIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  float* const tmpVelX = tmpVel.x;
-  float* const tmpVelY = tmpVel.y;
-  float* const tmpVelZ = tmpVel.z;
-
-  #pragma omp parallel for \
-    firstprivate(pPosX, pPosY, pPosZ, pVelX, pVelY, pVelZ, pWeight, tmpVelX, tmpVelY, tmpVelZ, N) \
-    default(none)
-  for (unsigned i = 0u; i < N; ++i)
+  // if in range, continue
+  if (globalThreadIdx < N)
   {
-    float newVelX{};
-    float newVelY{};
-    float newVelZ{};
+    float posX = p.posX[globalThreadIdx];
+    float posY = p.posY[globalThreadIdx];
+    float posZ = p.posZ[globalThreadIdx];
+    
+    float velX = p.velX[globalThreadIdx];
+    float velY = p.velY[globalThreadIdx];
+    float velZ = p.velZ[globalThreadIdx];
 
-    const float posX   = pPosX[i];
-    const float posY   = pPosY[i];
-    const float posZ   = pPosZ[i];
-    const float velX   = pVelX[i];
-    const float velY   = pVelY[i];
-    const float velZ   = pVelZ[i];
-    const float weight = pWeight[i];
+    float weight = p.weight[globalThreadIdx];
 
-    #pragma omp simd \
-      aligned(pPosX, pPosY, pPosZ, pVelX, pVelY, pVelZ, pWeight, tmpVelX, tmpVelY, tmpVelZ: dataAlignment) \
-      reduction(+:newVelX, newVelY, newVelZ)
-    for (unsigned j = 0u; j < N; ++j)
+    for (int i = 0; i < N; i++)
     {
-      const float otherPosX   = pPosX[j];
-      const float otherPosY   = pPosY[j];
-      const float otherPosZ   = pPosZ[j];
-      const float otherVelX   = pVelX[j];
-      const float otherVelY   = pVelY[j];
-      const float otherVelZ   = pVelZ[j];
-      const float otherWeight = pWeight[j];
-
-      const float dx = otherPosX - posX;
-      const float dy = otherPosY - posY;
-      const float dz = otherPosZ - posZ;
-
-      const float r2 = dx * dx + dy * dy + dz * dz;
-      const float r  = std::sqrt(r2);
-
-      newVelX += r > 0.f && r < COLLISION_DISTANCE
-                 ? (weight * velX - otherWeight * velX + 2.f * otherWeight * otherVelX) / (weight + otherWeight) - velX
-                 : 0.f;
-      newVelY += r > 0.f && r < COLLISION_DISTANCE
-                 ? (weight * velY - otherWeight * velY + 2.f * otherWeight * otherVelY) / (weight + otherWeight) - velY
-                 : 0.f;
-      newVelZ += r > 0.f && r < COLLISION_DISTANCE
-                 ? (weight * velZ - otherWeight * velZ + 2.f * otherWeight * otherVelZ) / (weight + otherWeight) - velZ
-                 : 0.f;
+      
     }
-
-    tmpVelX[i] += newVelX;
-    tmpVelY[i] += newVelY;
-    tmpVelZ[i] += newVelZ;
   }
-
 
   /********************************************************************************************************************/
 
