@@ -147,6 +147,10 @@ int main(const int argc, char **argv)
   cudaMalloc<float>(&(dParticles.velZ), (size_t) (N * sizeof(float)));
 
   cudaMalloc<float>(&(dParticles.weight), (size_t) (N * sizeof(float)));
+
+  cudaMalloc<float>(&(dTmpVelocities.x), (size_t) (N * sizeof(float)));
+  cudaMalloc<float>(&(dTmpVelocities.y), (size_t) (N * sizeof(float)));
+  cudaMalloc<float>(&(dTmpVelocities.z), (size_t) (N * sizeof(float)));
   
   /********************************************************************************************************************/
   /*                                     TODO: Memory transfer CPU -> GPU                                             */

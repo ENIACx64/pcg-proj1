@@ -1,6 +1,6 @@
 # PCG projekt 1
-- autor: Name Surname
-- login: xlogin00
+- autor: Jindřich Vodák
+- login: xvodak06
 
 ## Měření výkonu (čas / 100 kroků simulace)
 
