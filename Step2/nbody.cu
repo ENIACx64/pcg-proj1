@@ -74,7 +74,7 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
     for (int i = 0; i < N; i += blockDim.x)
     {
       // tile index
-      int tileIndex = blockDim.x * offset + threadIdx.x;
+      int tileIndex = i + threadIdx.x;
 
       // transfering data to shared memory
       posXShared[threadIdx.x] = pIn.posX[tileIndex];
@@ -115,27 +115,17 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
           newVelZ += (f * dz / (r + FLT_MIN)) * dtw;
         }
 
-        // preloading certain important values
-        float jVelX = velZShared[j];
-        float jVelY = velYShared[j];
-        float jVelZ = velZShared[j];
-
-        float jWeight = weightShared[j];
-
         // precalculating redundant computations
-        float weightsSum = weight + jWeight;
-        float weightsDifference = weight - jWeight;
+        float weightsSum = weight + weightShared[j];
+        float weightsDifference = weight - weightShared[j];
 
         if (r > 0.f && r < COLLISION_DISTANCE)
         {
-          newVelX += ((velX * weightsDifference + jWeight * 2 * jVelX) / weightsSum) - velX;
-          newVelY += ((velY * weightsDifference + jWeight * 2 * jVelY) / weightsSum) - velY;
-          newVelZ += ((velZ * weightsDifference + jWeight * 2 * jVelZ) / weightsSum) - velZ;
+          newVelX += ((velX * weightsDifference + weightShared[j] * 2 * velXShared[j]) / weightsSum) - velX;
+          newVelY += ((velY * weightsDifference + weightShared[j] * 2 * velYShared[j]) / weightsSum) - velY;
+          newVelZ += ((velZ * weightsDifference + weightShared[j] * 2 * velZShared[j]) / weightsSum) - velZ;
         }
       }
-
-      // incrementing offset
-      offset++;
 
       // synchronization
       __syncthreads();

@@ -166,11 +166,10 @@ int main(const int argc, char **argv)
   /*                                  TODO: Set dynamic shared memory computation                                     */
   /********************************************************************************************************************/
 
-  // N particles
-  // times 7 attributes (position xyz, velocity xyz and weight)
+  // attributes (position xyz, velocity xyz and weight)
   // times size of float
   // times number of threads per block
-  const std::size_t simShmSize = N * 7 * sizeof(float) * simBlockDim;
+  const std::size_t simShmSize = 7 * sizeof(float) * simBlockDim;
 
   /********************************************************************************************************************/
 
