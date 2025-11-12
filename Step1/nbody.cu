@@ -69,8 +69,34 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
       // calculating f
       float f = -G * pIn.weight[globalThreadIdx] * pIn.weight[i] / (r2 + FLT_MIN);
 
+      // precalculating redundant computations
+      float dtw = dt / pIn.weight[globalThreadIdx];
+
       // calculating gravitation velocity
-      
+      if (r > COLLISION_DISTANCE)
+      {
+        newVelX += (f * dx / (r + FLT_MIN)) * dtw;
+        newVelY += (f * dy / (r + FLT_MIN)) * dtw;
+        newVelZ += (f * dz / (r + FLT_MIN)) * dtw;
+      }
+
+      // preloading certain important values
+      float iVelX = pIn.velX[i];
+      float iVelY = pIn.velY[i];
+      float iVelZ = pIn.velZ[i];
+
+      float iWeight = pIn.weight[i];
+
+      // precalculating redundant computations
+      float weightsSum = weight + iWeight;
+      float weightsDifference = weight - iWeight;
+
+      if (r > COLLISION_DISTANCE)
+      {
+        newVelX += ((velX * weightsDifference + iWeight * 2 * iVelX) / weightsSum);
+        newVelY += ((velY * weightsDifference + iWeight * 2 * iVelY) / weightsSum);
+        newVelZ += ((velZ * weightsDifference + iWeight * 2 * iVelZ) / weightsSum);
+      }
     }
   }
 
