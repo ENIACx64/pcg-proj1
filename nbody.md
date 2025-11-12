@@ -51,6 +51,7 @@
 
 ### Krok 0: Základní implementace
 **Došlo ke zrychlení?**
+Ano, ke zrychlení došlo. Zrychlení se zvyšuje s rostoucím počtem částic, protože GPU je oproti CPU schopno zpracovat souběžně velké množství dat. S rostoucím počtem částic se proto bude CPU projevovat více jako úzké hrdlo.
 
 
 **Vyskytla se nějaká anomále v naměřených časech? Pokud ano, vysvětlete:**
@@ -58,10 +59,12 @@
 
 ### Krok 1: Sloučení kernelů
 **Došlo ke zrychlení?**
-
+Ano, ke zrychlení došlo.
 
 **Popište hlavní důvody:**
+Zrychlení je téměř konstantní a velikost domény na něj prakticky nemá vliv. To je dáno tím, že v kroku 1 došlo pouze ke sloučení kernelů, což ovlivní (zrychlí) výpočet stejně u jakékoliv velikosti domény.
 
+Sloučením kernelů odpadá režie spojená s voláním kernelů. Rovněž se snížila redundance výpočtů, které se v tomto kroku provedly pouze v jednom kernelu.
 
 ### Krok 2: Sdílená paměť
 **Došlo ke zrychlení?**
