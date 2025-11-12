@@ -91,13 +91,22 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
       float weightsSum = weight + iWeight;
       float weightsDifference = weight - iWeight;
 
-      if (r > COLLISION_DISTANCE)
+      if (r > 0.f && r < COLLISION_DISTANCE)
       {
-        newVelX += ((velX * weightsDifference + iWeight * 2 * iVelX) / weightsSum);
-        newVelY += ((velY * weightsDifference + iWeight * 2 * iVelY) / weightsSum);
-        newVelZ += ((velZ * weightsDifference + iWeight * 2 * iVelZ) / weightsSum);
+        newVelX += ((velX * weightsDifference + iWeight * 2 * iVelX) / weightsSum) - velX;
+        newVelY += ((velY * weightsDifference + iWeight * 2 * iVelY) / weightsSum) - velY;
+        newVelZ += ((velZ * weightsDifference + iWeight * 2 * iVelZ) / weightsSum) - velZ;
       }
+    
     }
+
+    pOut.posX[globalThreadIdx] = posX + ((velX + newVelX) * dt);
+    pOut.posY[globalThreadIdx] = posY + ((velY + newVelY) * dt);
+    pOut.posZ[globalThreadIdx] = posZ + ((velZ + newVelZ) * dt);
+
+    pOut.velX[globalThreadIdx] = velX + newVelX;
+    pOut.velY[globalThreadIdx] = velY + newVelY;
+    pOut.velZ[globalThreadIdx] = velZ + newVelZ;
   }
 
   /********************************************************************************************************************/

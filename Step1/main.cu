@@ -175,8 +175,7 @@ int main(const int argc, char **argv)
     /******************************************************************************************************************/
     /*                                     TODO: GPU kernel invocation                                                */
     /******************************************************************************************************************/
-    calculateVelocity<<<simGridDim, simBlockDim>>>(dParticles[0], dParticles[1], N, dt);
-    // TODO
+    calculateVelocity<<<simGridDim, simBlockDim>>>(dParticles[srcIdx], dParticles[dstIdx], N, dt);
 
     /******************************************************************************************************************/
   }
