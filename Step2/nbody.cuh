@@ -1,10 +1,10 @@
 /**
  * @file      nbody.cuh
  *
- * @author    Name Surname \n
+ * @author    Jindrich Vodak \n
  *            Faculty of Information Technology \n
  *            Brno University of Technology \n
- *            xlogin00@fit.vutbr.cz
+ *            xvodak06@stud.fit.vutbr.cz
  *
  * @brief     PCG - Assignment 1 / GPU Step 2
  *
@@ -26,7 +26,18 @@ struct Particles
   /********************************************************************************************************************/
   /*                             TODO: Particle data structure optimized for use on GPU                               */
   /********************************************************************************************************************/
+  // positions
+  float *posX;
+  float *posY;
+  float *posZ;
 
+  // velocities
+  float *velX;
+  float *velY;
+  float *velZ;
+
+  // weights
+  float *weight;
 
   /********************************************************************************************************************/
 };
