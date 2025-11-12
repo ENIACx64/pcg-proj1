@@ -67,10 +67,10 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
       float r  = sqrt(r2);
 
       // calculating f
-      float f = -G * pIn.weight[globalThreadIdx] * pIn.weight[i] / (r2 + FLT_MIN);
+      float f = -G * weight * pIn.weight[i] / (r2 + FLT_MIN);
 
       // precalculating redundant computations
-      float dtw = dt / pIn.weight[globalThreadIdx];
+      float dtw = dt / weight;
 
       // calculating gravitation velocity
       if (r > COLLISION_DISTANCE)
