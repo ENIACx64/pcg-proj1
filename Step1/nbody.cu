@@ -35,8 +35,44 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
   /********************************************************************************************************************/
   /*          TODO: CUDA kernel to calculate new particles velocity and position, collapse previous kernels           */
   /********************************************************************************************************************/
+  // getting thread ID
+  int globalThreadIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
+  // if in range, continue
+  if (globalThreadIdx < N)
+  {
+    float posX = pIn.posX[globalThreadIdx];
+    float posY = pIn.posY[globalThreadIdx];
+    float posZ = pIn.posZ[globalThreadIdx];
 
+    float velX = pIn.velX[globalThreadIdx];
+    float velY = pIn.velY[globalThreadIdx];
+    float velZ = pIn.velZ[globalThreadIdx];
+
+    float weight = pIn.weight[globalThreadIdx];
+
+    float newVelX = 0;
+    float newVelY = 0;
+    float newVelZ = 0;
+
+    for (int i = 0; i < N; i++)
+    {
+      // calculating position differences
+      float dx = posX - pIn.posX[i];
+      float dy = posY - pIn.posY[i];
+      float dz = posZ - pIn.posZ[i];
+
+      // calculating r as shown in the CPU version
+      float r2 = dx * dx + dy * dy + dz * dz;
+      float r  = sqrt(r2);
+
+      // calculating f
+      float f = -G * pIn.weight[globalThreadIdx] * pIn.weight[i] / (r2 + FLT_MIN);
+
+      // calculating gravitation velocity
+      
+    }
+  }
 
   /********************************************************************************************************************/
   

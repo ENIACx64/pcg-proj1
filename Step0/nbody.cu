@@ -45,9 +45,9 @@ __global__ void calculateGravitationVelocity(Particles p, const Velocities tmpVe
     float posY = p.posY[globalThreadIdx];
     float posZ = p.posZ[globalThreadIdx];
 
-    float newVelX{};
-    float newVelY{};
-    float newVelZ{};
+    float newVelX = 0;
+    float newVelY = 0;
+    float newVelZ = 0;
 
     for (int i = 0; i < N; i++)
     {
@@ -58,14 +58,21 @@ __global__ void calculateGravitationVelocity(Particles p, const Velocities tmpVe
 
       // calculating r as shown in the CPU version
       float r2 = dx * dx + dy * dy + dz * dz;
-      float r  = std::sqrt(r2);
+      float r  = sqrt(r2);
 
       // calculating f
       float f = -G * p.weight[globalThreadIdx] * p.weight[i] / (r2 + FLT_MIN);
 
-      newVelX += r > COLLISION_DISTANCE ? (f * dx / (r + FLT_MIN)) * (dt / p.weight[globalThreadIdx]) : 0.f;
-      newVelY += r > COLLISION_DISTANCE ? (f * dx / (r + FLT_MIN)) * (dt / p.weight[globalThreadIdx]) : 0.f;
-      newVelZ += r > COLLISION_DISTANCE ? (f * dx / (r + FLT_MIN)) * (dt / p.weight[globalThreadIdx]) : 0.f;
+      // precalculating reduntant computations
+      float dtw = dt / p.weight[globalThreadIdx];
+
+      // calculating gravitation velocity
+      if (r > COLLISION_DISTANCE)
+      {
+        newVelX += (f * dx / (r + FLT_MIN)) * dtw;
+        newVelY += (f * dy / (r + FLT_MIN)) * dtw;
+        newVelZ += (f * dz / (r + FLT_MIN)) * dtw;
+      }
     }
 
     // saving tmpVel
@@ -106,18 +113,18 @@ __global__ void calculateCollisionVelocity(Particles p, const Velocities tmpVel,
 
     float weight = p.weight[globalThreadIdx];
 
-    float newVelX{};
-    float newVelY{};
-    float newVelZ{};
+    float newVelX = 0;
+    float newVelY = 0;
+    float newVelZ = 0;
 
     for (int i = 0; i < N; i++)
     {
       // preloading certain important values
-      float velXi = p.velX[i];
-      float velYi = p.velY[i];
-      float velZi = p.velZ[i];
+      float iVelX = p.velX[i];
+      float iVelY = p.velY[i];
+      float iVelZ = p.velZ[i];
 
-      float weighti = p.weight[i];
+      float iWeight = p.weight[i];
 
       // calculating position differences
       float dx = posX - p.posX[i];
@@ -126,14 +133,17 @@ __global__ void calculateCollisionVelocity(Particles p, const Velocities tmpVel,
 
       // calculating r as shown in the CPU version
       float r2 = dx * dx + dy * dy + dz * dz;
-      float r  = std::sqrt(r2);
+      float r  = sqrt(r2);
 
-      float weightsSum = weight + weighti;
-      float weightsDifference = weight - weighti;
+      float weightsSum = weight + iWeight;
+      float weightsDifference = weight - iWeight;
 
-      newVelX += r > COLLISION_DISTANCE ? ((velX * weightsDifference + weighti * 2 * velXi) / weightsSum) : 0.f;
-      newVelY += r > COLLISION_DISTANCE ? ((velY * weightsDifference + weighti * 2 * velYi) / weightsSum) : 0.f;
-      newVelZ += r > COLLISION_DISTANCE ? ((velZ * weightsDifference + weighti * 2 * velZi) / weightsSum) : 0.f;
+      if (r > COLLISION_DISTANCE)
+      {
+        newVelX += ((velX * weightsDifference + iWeight * 2 * iVelX) / weightsSum);
+        newVelY += ((velY * weightsDifference + iWeight * 2 * iVelY) / weightsSum);
+        newVelZ += ((velZ * weightsDifference + iWeight * 2 * iVelZ) / weightsSum);
+      }
     }
 
     // saving tmpVel
