@@ -213,14 +213,32 @@ int main(const int argc, char **argv)
   /********************************************************************************************************************/
   /*                                     TODO: GPU side memory deallocation                                           */
   /********************************************************************************************************************/
+  cudaFree(dParticles.posX);
+  cudaFree(dParticles.posY);
+  cudaFree(dParticles.posZ);
 
-  
+  cudaFree(dParticles.velX);
+  cudaFree(dParticles.velY);
+  cudaFree(dParticles.velZ);
+
+  cudaFree(dParticles.weight);
+
+  cudaFree(dTmpVelocities.x);
+  cudaFree(dTmpVelocities.y);
+  cudaFree(dTmpVelocities.z);
 
   /********************************************************************************************************************/
   /*                                     TODO: CPU side memory deallocation                                           */
   /********************************************************************************************************************/
+  free(hParticles.posX);
+  free(hParticles.posY);
+  free(hParticles.posZ);
 
+  free(hParticles.velX);
+  free(hParticles.velY);
+  free(hParticles.velZ);
 
+  free(hParticles.weight);
 
   /********************************************************************************************************************/
 }// end of main
