@@ -35,8 +35,14 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
   /********************************************************************************************************************/
   /*  TODO: CUDA kernel to calculate new particles velocity and position, use shared memory to minimize memory access */
   /********************************************************************************************************************/
+  // getting thread ID
+  int globalThreadIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
+  // if in range, continue
+  if (globalThreadIdx < N)
+  {
 
+  }
 
   /********************************************************************************************************************/
 

@@ -166,7 +166,11 @@ int main(const int argc, char **argv)
   /*                                  TODO: Set dynamic shared memory computation                                     */
   /********************************************************************************************************************/
 
-  const std::size_t simShmSize = 0;
+  // N particles
+  // times 7 attributes (position xyz, velocity xyz and weight)
+  // times size of float
+  // times number of threads per block
+  const std::size_t simShmSize = N * 7 * sizeof(float) * simBlockDim;
 
   /********************************************************************************************************************/
 
@@ -201,13 +205,13 @@ int main(const int argc, char **argv)
   /********************************************************************************************************************/
   /*                                     TODO: Memory transfer GPU -> CPU                                             */
   /********************************************************************************************************************/
-  cudaMemcpy(hParticles.posX, dParticles[0].posX, (N * sizeof(float)), cudaMemcpyDeviceToHost);
-  cudaMemcpy(hParticles.posY, dParticles[0].posY, (N * sizeof(float)), cudaMemcpyDeviceToHost);
-  cudaMemcpy(hParticles.posZ, dParticles[0].posZ, (N * sizeof(float)), cudaMemcpyDeviceToHost);
-  cudaMemcpy(hParticles.velX, dParticles[0].velX, (N * sizeof(float)), cudaMemcpyDeviceToHost);
-  cudaMemcpy(hParticles.velY, dParticles[0].velY, (N * sizeof(float)), cudaMemcpyDeviceToHost);
-  cudaMemcpy(hParticles.velZ, dParticles[0].velZ, (N * sizeof(float)), cudaMemcpyDeviceToHost);
-  cudaMemcpy(hParticles.weight, dParticles[0].weight, (N * sizeof(float)), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.posX, dParticles[resIdx].posX, (N * sizeof(float)), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.posY, dParticles[resIdx].posY, (N * sizeof(float)), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.posZ, dParticles[resIdx].posZ, (N * sizeof(float)), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.velX, dParticles[resIdx].velX, (N * sizeof(float)), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.velY, dParticles[resIdx].velY, (N * sizeof(float)), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.velZ, dParticles[resIdx].velZ, (N * sizeof(float)), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hParticles.weight, dParticles[resIdx].weight, (N * sizeof(float)), cudaMemcpyDeviceToHost);
 
   /********************************************************************************************************************/
 
