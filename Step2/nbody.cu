@@ -66,9 +66,6 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
     float newVelX = 0;
     float newVelY = 0;
     float newVelZ = 0;
-
-    // offset for tiles
-    int offset = 0;
     
     // looping by block width
     for (int i = 0; i < N; i += blockDim.x)
