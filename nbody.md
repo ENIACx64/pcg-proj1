@@ -74,7 +74,7 @@ Ke zrychlení došlo díky použití sdílené paměti, která je blíže k vlá
 
 ### Krok 3: Výpočet těžiště
 **Popište Vaši implementaci redukce:**
-TODO
+Principem redukce je algoritmus Grid-Stride Loop. Nejprve si každé vlákno inicializuje sdílenou paměť a lokální proměnnou v registru, která bude sloužit k akumulaci vážené sumy pozic a celkové váhy. Po dokončení akumulace jsou výsledky zapsány do sdílené paměti. Poté dochází k postupné redukci, kdy se redukuje po dvojicích tak dlouho, dokud nezůstane jediný výsledek. Tento výsledek je pomocí zámku zapsán na adresu ukazatele na strukturu pro těžiště. Výsledky jsou po přenesení z GPU na CPu vyděleny celkovou hmotností, čímž je získán finální výsledek.
 
 **Došlo ke zrychlení?**
 Ne, k pozorovatelnému zrychlení nedošlo.
@@ -84,7 +84,7 @@ Není důvod, aby s dalším výpočtem navíc oproti minulé implementaci došl
 
 ### Krok 4: Synchronizace
 **Popište Vaše řešení synchronizace:**
-TODO
+V implementaci jsou použity 3 streamy dle doporučení zadání - jeden pro výpočet polohy částic, jeden pro výpočet těžiště a jeden pro kopírování dat. Nejprve je spuštěn kernel pro výpočet nové polohy částice. Poté je vyhodnocena podmínka shouldWrite(s), která určí, zda se bude provádět zbytek cyklu. Pokud ano, spustí se výpočet těžiště. Během výpočtu dochází k přenosu dat nové polohy částice z GPU na CPU. Poté jsou data zapsána do souboru. Po dokončení výpočtu těžiště jsou data přenesena z GPU na CPU a zapsána do souboru. Pak již jen stačí vynulovat data pro strukturu těžiště.
 
 **Došlo ke zrychlení?**
 Ne, k pozorovatelnému zrychlení nedošlo.
@@ -94,7 +94,7 @@ V tomto kroku je oproti minulé implementaci navíc ukládání mezivýsledků s
 
 ### Krok 5: Měření výkonu
 **Jakých jste dosáhli výsledků?**
-TODO
+Algoritmus se podařilo výrazně zrychlit pomocí CUDA a provádění kódu na GPU. Už jen samotná naivní implementace algoritmu na GPU přinesla při větších velikostech domény výrazné zrychlení, které s rostoucí velikostí domény dále stoupalo. Zrychlení bylo dosaženo i díky sloučení kernelů a sdílené paměti, ovšem v tomto případě už šlo o kostantní zrychlení nezávislé na velikosti domény. Poslední dva kroky žádné zrychlení nepřinesly, jelikož jejich to ani nebyl jejich účel. Zajímavé ovšem je, že nepřinesly ani žádné výrazné zpomalení.
 
 **Lze v datech pozorovat nějaké anomálie?**
-TODO
+Za anomálii se dá považovat, že je algoritmus při nižších velikostech domény pomalejší na GPU než na CPU. Jak bylo ovšem vysvětleno výše, je to pravděpodobně způsobeno tím, že v případě takto "malých" dat převýší režie spojená s přenosem na GPU potenciální benefity v podobě vyšší rychlosti.

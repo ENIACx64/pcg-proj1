@@ -41,105 +41,98 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
   // shared memory
   extern __shared__ float sharedMemory[];
 
-  // if in range, continue
-  if (globalThreadIdx < N)
+  float posX = pIn.posX[globalThreadIdx];
+  float posY = pIn.posY[globalThreadIdx];
+  float posZ = pIn.posZ[globalThreadIdx];
+
+  float velX = pIn.velX[globalThreadIdx];
+  float velY = pIn.velY[globalThreadIdx];
+  float velZ = pIn.velZ[globalThreadIdx];
+
+  float weight = pIn.weight[globalThreadIdx];
+
+  float *posXShared = sharedMemory;
+  float *posYShared = &sharedMemory[blockDim.x * 1];
+  float *posZShared = &sharedMemory[blockDim.x * 2];
+
+  float *velXShared = &sharedMemory[blockDim.x * 3];
+  float *velYShared = &sharedMemory[blockDim.x * 4];
+  float *velZShared = &sharedMemory[blockDim.x * 5];
+
+  float *weightShared = &sharedMemory[blockDim.x * 6];
+
+  float newVelX = 0;
+  float newVelY = 0;
+  float newVelZ = 0;
+  
+  // looping by block width
+  for (int i = 0; i < N; i += blockDim.x)
   {
-    float posX = pIn.posX[globalThreadIdx];
-    float posY = pIn.posY[globalThreadIdx];
-    float posZ = pIn.posZ[globalThreadIdx];
+    // tile index
+    int tileIndex = i + threadIdx.x;
 
-    float velX = pIn.velX[globalThreadIdx];
-    float velY = pIn.velY[globalThreadIdx];
-    float velZ = pIn.velZ[globalThreadIdx];
+    // transferring data to shared memory
+    posXShared[threadIdx.x] = pIn.posX[tileIndex];
+    posYShared[threadIdx.x] = pIn.posY[tileIndex];
+    posZShared[threadIdx.x] = pIn.posZ[tileIndex];
 
-    float weight = pIn.weight[globalThreadIdx];
+    velXShared[threadIdx.x] = pIn.velX[tileIndex];
+    velYShared[threadIdx.x] = pIn.velY[tileIndex];
+    velZShared[threadIdx.x] = pIn.velZ[tileIndex];
 
-    float *posXShared = sharedMemory;
-    float *posYShared = &sharedMemory[blockDim.x * 1];
-    float *posZShared = &sharedMemory[blockDim.x * 2];
+    weightShared[threadIdx.x] = pIn.weight[tileIndex];
 
-    float *velXShared = &sharedMemory[blockDim.x * 3];
-    float *velYShared = &sharedMemory[blockDim.x * 4];
-    float *velZShared = &sharedMemory[blockDim.x * 5];
+    // necessary synchronization because of shared memory
+    __syncthreads();
 
-    float *weightShared = &sharedMemory[blockDim.x * 6];
-
-    float newVelX = 0;
-    float newVelY = 0;
-    float newVelZ = 0;
-    
-    // looping by block width
-    for (int i = 0; i < N; i += blockDim.x)
+    for (int j = 0; j < blockDim.x; j++)
     {
-      // tile index
-      int tileIndex = i + threadIdx.x;
+      // calculating position differences
+      float dx = posX - posXShared[j];
+      float dy = posY - posYShared[j];
+      float dz = posZ - posZShared[j];
 
-      if (tileIndex < N)
+      // calculating r as shown in the CPU version
+      float r2 = dx * dx + dy * dy + dz * dz;
+      float r  = sqrt(r2);
+
+      // calculating f
+      float f = -G * weight * weightShared[j] / (r2 + FLT_MIN);
+
+      // precalculating redundant computations
+      float dtw = dt / weight;
+
+      // calculating gravitation velocity
+      if (r > COLLISION_DISTANCE)
       {
-        // transferring data to shared memory
-        posXShared[threadIdx.x] = pIn.posX[tileIndex];
-        posYShared[threadIdx.x] = pIn.posY[tileIndex];
-        posZShared[threadIdx.x] = pIn.posZ[tileIndex];
-
-        velXShared[threadIdx.x] = pIn.velX[tileIndex];
-        velYShared[threadIdx.x] = pIn.velY[tileIndex];
-        velZShared[threadIdx.x] = pIn.velZ[tileIndex];
-
-        weightShared[threadIdx.x] = pIn.weight[tileIndex];
+        newVelX += (f * dx / (r + FLT_MIN)) * dtw;
+        newVelY += (f * dy / (r + FLT_MIN)) * dtw;
+        newVelZ += (f * dz / (r + FLT_MIN)) * dtw;
       }
 
-      // necessary synchronization because of shared memory
-      __syncthreads();
+      // precalculating redundant computations
+      float weightsSum = weight + weightShared[j];
+      float weightsDifference = weight - weightShared[j];
 
-      for (int j = 0; j < blockDim.x; j++)
+      if (r > 0.f && r < COLLISION_DISTANCE)
       {
-        // calculating position differences
-        float dx = posX - posXShared[j];
-        float dy = posY - posYShared[j];
-        float dz = posZ - posZShared[j];
-
-        // calculating r as shown in the CPU version
-        float r2 = dx * dx + dy * dy + dz * dz;
-        float r  = sqrt(r2);
-
-        // calculating f
-        float f = -G * weight * weightShared[j] / (r2 + FLT_MIN);
-
-        // precalculating redundant computations
-        float dtw = dt / weight;
-
-        // calculating gravitation velocity
-        if (r > COLLISION_DISTANCE)
-        {
-          newVelX += (f * dx / (r + FLT_MIN)) * dtw;
-          newVelY += (f * dy / (r + FLT_MIN)) * dtw;
-          newVelZ += (f * dz / (r + FLT_MIN)) * dtw;
-        }
-
-        // precalculating redundant computations
-        float weightsSum = weight + weightShared[j];
-        float weightsDifference = weight - weightShared[j];
-
-        if (r > 0.f && r < COLLISION_DISTANCE)
-        {
-          newVelX += ((velX * weightsDifference + weightShared[j] * 2 * velXShared[j]) / weightsSum) - velX;
-          newVelY += ((velY * weightsDifference + weightShared[j] * 2 * velYShared[j]) / weightsSum) - velY;
-          newVelZ += ((velZ * weightsDifference + weightShared[j] * 2 * velZShared[j]) / weightsSum) - velZ;
-        }
+        newVelX += ((velX * weightsDifference + weightShared[j] * 2 * velXShared[j]) / weightsSum) - velX;
+        newVelY += ((velY * weightsDifference + weightShared[j] * 2 * velYShared[j]) / weightsSum) - velY;
+        newVelZ += ((velZ * weightsDifference + weightShared[j] * 2 * velZShared[j]) / weightsSum) - velZ;
       }
-
-      // synchronization
-      __syncthreads();
     }
 
-    pOut.posX[globalThreadIdx] = posX + ((velX + newVelX) * dt);
-    pOut.posY[globalThreadIdx] = posY + ((velY + newVelY) * dt);
-    pOut.posZ[globalThreadIdx] = posZ + ((velZ + newVelZ) * dt);
-
-    pOut.velX[globalThreadIdx] = velX + newVelX;
-    pOut.velY[globalThreadIdx] = velY + newVelY;
-    pOut.velZ[globalThreadIdx] = velZ + newVelZ;
+    // synchronization
+    __syncthreads();
   }
+
+  pOut.posX[globalThreadIdx] = posX + ((velX + newVelX) * dt);
+  pOut.posY[globalThreadIdx] = posY + ((velY + newVelY) * dt);
+  pOut.posZ[globalThreadIdx] = posZ + ((velZ + newVelZ) * dt);
+
+  pOut.velX[globalThreadIdx] = velX + newVelX;
+  pOut.velY[globalThreadIdx] = velY + newVelY;
+  pOut.velZ[globalThreadIdx] = velZ + newVelZ;
 
   /********************************************************************************************************************/
 
