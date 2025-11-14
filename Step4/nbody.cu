@@ -1,10 +1,10 @@
 /**
  * @file      nbody.cu
  *
- * @author    Name Surname \n
+ * @author    Jindrich Vodak \n
  *            Faculty of Information Technology \n
  *            Brno University of Technology \n
- *            xlogin00@fit.vutbr.cz
+ *            xvodak06@stud.fit.vutbr.cz
  *
  * @brief     PCG - Assignment 1 / GPU Step 4
  *
