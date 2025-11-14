@@ -166,6 +166,7 @@ __global__ void centerOfMass(Particles p, float4* com, int* lock, const unsigned
 
   // getting thread ID
   int globalThreadIdx = blockIdx.x * blockDim.x + threadIdx.x;
+
   int gridStride = blockDim.x * gridDim.x;
 
   for (int i = globalThreadIdx; i < N; i += gridStride)
@@ -179,6 +180,7 @@ __global__ void centerOfMass(Particles p, float4* com, int* lock, const unsigned
   // synchronizing so every thread has the same shared memory
   __syncthreads();
 
+  // reduction
   for (int i = blockDim.x / 2; i > 0; i >>= 1)
   {
     if (threadIdx.x < i)

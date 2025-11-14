@@ -245,6 +245,10 @@ int main(const int argc, char **argv)
 
   cudaMemcpy(hCenterOfMass, dCenterOfMass, sizeof(float4), cudaMemcpyDeviceToHost);
 
+  hCenterOfMass->x = hCenterOfMass->x / hCenterOfMass->w;
+  hCenterOfMass->y = hCenterOfMass->y / hCenterOfMass->w;
+  hCenterOfMass->z = hCenterOfMass->z / hCenterOfMass->w;
+
   /********************************************************************************************************************/
 
   // Compute reference center of mass on CPU
