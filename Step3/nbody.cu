@@ -42,6 +42,7 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
   extern __shared__ float sharedMemory[];
 
   // if in range, continue
+  if (globalThreadIdx < N)
   {
     float posX = pIn.posX[globalThreadIdx];
     float posY = pIn.posY[globalThreadIdx];
