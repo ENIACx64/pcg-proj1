@@ -96,29 +96,32 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
       float r2 = dx * dx + dy * dy + dz * dz;
       float r  = sqrt(r2);
 
-      // calculating f
-      float f = -G * weight * weightShared[j] / (r2 + FLT_MIN);
-
-      // precalculating redundant computations
-      float dtw = dt / weight;
-
-      // calculating gravitation velocity
-      if (r > COLLISION_DISTANCE)
+      if (r2 > 0.0f)
       {
-        newVelX += (f * dx / (r + FLT_MIN)) * dtw;
-        newVelY += (f * dy / (r + FLT_MIN)) * dtw;
-        newVelZ += (f * dz / (r + FLT_MIN)) * dtw;
-      }
+        // calculating f
+        float f = -G * weight * weightShared[j] / (r2 + FLT_MIN);
 
-      // precalculating redundant computations
-      float weightsSum = weight + weightShared[j];
-      float weightsDifference = weight - weightShared[j];
+        // precalculating redundant computations
+        float dtw = dt / weight;
 
-      if (r > 0.f && r < COLLISION_DISTANCE)
-      {
-        newVelX += ((velX * weightsDifference + weightShared[j] * 2 * velXShared[j]) / weightsSum) - velX;
-        newVelY += ((velY * weightsDifference + weightShared[j] * 2 * velYShared[j]) / weightsSum) - velY;
-        newVelZ += ((velZ * weightsDifference + weightShared[j] * 2 * velZShared[j]) / weightsSum) - velZ;
+        // calculating gravitation velocity
+        if (r > COLLISION_DISTANCE)
+        {
+          newVelX += (f * dx / (r + FLT_MIN)) * dtw;
+          newVelY += (f * dy / (r + FLT_MIN)) * dtw;
+          newVelZ += (f * dz / (r + FLT_MIN)) * dtw;
+        }
+
+        // precalculating redundant computations
+        float weightsSum = weight + weightShared[j];
+        float weightsDifference = weight - weightShared[j];
+
+        if (r > 0.f && r < COLLISION_DISTANCE)
+        {
+          newVelX += ((velX * weightsDifference + weightShared[j] * 2 * velXShared[j]) / weightsSum) - velX;
+          newVelY += ((velY * weightsDifference + weightShared[j] * 2 * velYShared[j]) / weightsSum) - velY;
+          newVelZ += ((velZ * weightsDifference + weightShared[j] * 2 * velZShared[j]) / weightsSum) - velZ;
+        }
       }
     }
 
