@@ -86,6 +86,8 @@ Není důvod, aby s dalším výpočtem navíc oproti minulé implementaci došl
 **Popište Vaše řešení synchronizace:**
 V implementaci jsou použity 3 streamy dle doporučení zadání - jeden pro výpočet polohy částic, jeden pro výpočet těžiště a jeden pro kopírování dat. Nejprve je spuštěn kernel pro výpočet nové polohy částice. Poté je vyhodnocena podmínka shouldWrite(s), která určí, zda se bude provádět zbytek cyklu. Pokud ano, spustí se výpočet těžiště. Během výpočtu dochází k přenosu dat nové polohy částice z GPU na CPU. Poté jsou data zapsána do souboru. Po dokončení výpočtu těžiště jsou data přenesena z GPU na CPU a zapsána do souboru. Pak již jen stačí vynulovat data pro strukturu těžiště.
 
+Těsně před deadlinem jsem bohužel zpozoroval, že někde v kódu dochází k nesprávnému indexování kroků - skript compare.sh ukazuje, že hodnota se vždy liší od té referenční o jeden řádek. Bohužel se mi nepodařilo příčinu chyby odhalit před deadlinem.
+
 **Došlo ke zrychlení?**
 Ne, k pozorovatelnému zrychlení nedošlo.
 
