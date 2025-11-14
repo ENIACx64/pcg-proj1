@@ -53,9 +53,8 @@
 **Došlo ke zrychlení?**
 Ano, ke zrychlení došlo. Zrychlení se zvyšuje s rostoucím počtem částic, protože GPU je oproti CPU schopno zpracovat souběžně velké množství dat. S rostoucím počtem částic se proto bude CPU projevovat více jako úzké hrdlo.
 
-
 **Vyskytla se nějaká anomále v naměřených časech? Pokud ano, vysvětlete:**
-
+U nižší hodnoty N ke zrychlení nedochází, naopak dochází ke zpomalení. To je dáno tím, že velikost domény je příliš malá a režie spojená s manipulací s daty na a z GPU přebije benefity výpočtu na GPU.
 
 ### Krok 1: Sloučení kernelů
 **Došlo ke zrychlení?**
@@ -68,33 +67,34 @@ Sloučením kernelů odpadá režie spojená s voláním kernelů. Rovněž se s
 
 ### Krok 2: Sdílená paměť
 **Došlo ke zrychlení?**
-
+Ano, ke zrychlení došlo.
 
 **Popište hlavní důvody:**
-
+Ke zrychlení došlo díky použití sdílené paměti, která je blíže k vláknům a má tedy nižší latenci. Na začátku výpočtu jsou do sdílené paměti přednačtena data z globální paměti, poté se ve výpočtu pracuje se sdílenou pamětí, a až na konci výpočtu se výsledek opět zapíše do globální paměti.
 
 ### Krok 3: Výpočet těžiště
 **Popište Vaši implementaci redukce:**
-
+TODO
 
 **Došlo ke zrychlení?**
-
+Ne, k pozorovatelnému zrychlení nedošlo.
 
 **Popište hlavní důvody:**
-
+Není důvod, aby s dalším výpočtem navíc oproti minulé implementaci došlo ke zrychlení.
 
 ### Krok 4: Synchronizace
 **Popište Vaše řešení synchronizace:**
-
+TODO
 
 **Došlo ke zrychlení?**
-
+Ne, k pozorovatelnému zrychlení nedošlo.
 
 **Popište hlavní důvody:**
-
+V tomto kroku je oproti minulé implementaci navíc ukládání mezivýsledků simulace. Aby nedocházelo ke zbytečným prodlevám, je třeba synchronizovat procesy tak, aby se přenosy dat a výpočet co nejvíce vykryly. To nepřináší žádný benefit v podobě zrychlení - spíše to může program zpomalit.
 
 ### Krok 5: Měření výkonu
 **Jakých jste dosáhli výsledků?**
-
+TODO
 
 **Lze v datech pozorovat nějaké anomálie?**
+TODO
