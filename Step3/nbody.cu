@@ -160,6 +160,7 @@ __global__ void centerOfMass(Particles p, float4* com, int* lock, const unsigned
   float4 *comShared = redSharedMemory;
 
   comShared[threadIdx.x] = {0.0f, 0.0f, 0.0f, 0.0f};
+  float4 comLocal = {0.0f, 0.0f, 0.0f, 0.0f};
 
   // synchronizing to ensure all threads have initialized shared memory
   __syncthreads();
@@ -171,11 +172,14 @@ __global__ void centerOfMass(Particles p, float4* com, int* lock, const unsigned
 
   for (int i = globalThreadIdx; i < N; i += gridStride)
   {
-    comShared[threadIdx.x].x += p.posX[i] * p.weight[i];
-    comShared[threadIdx.x].y += p.posY[i] * p.weight[i];
-    comShared[threadIdx.x].z += p.posZ[i] * p.weight[i];
-    comShared[threadIdx.x].w += p.weight[i];
+    comLocal.x += p.posX[i] * p.weight[i];
+    comLocal.y += p.posY[i] * p.weight[i];
+    comLocal.z += p.posZ[i] * p.weight[i];
+    comLocal.w += p.weight[i];
   }
+
+  // writing accumulated result into shared memory
+  comShared[threadIdx.x] = comLocal;
 
   // synchronizing so every thread has the same shared memory
   __syncthreads();
