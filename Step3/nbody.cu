@@ -74,7 +74,7 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
       // tile index
       int tileIndex = i + threadIdx.x;
 
-      // transfering data to shared memory
+      // transferring data to shared memory
       posXShared[threadIdx.x] = pIn.posX[tileIndex];
       posYShared[threadIdx.x] = pIn.posY[tileIndex];
       posZShared[threadIdx.x] = pIn.posZ[tileIndex];
