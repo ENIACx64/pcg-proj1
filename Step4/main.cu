@@ -232,36 +232,6 @@ int main(const int argc, char **argv)
   /*                     Implement host callback lambdas (or functions) that will be launched with                    */
   /*                    cudaLaunchHostFunc to write particle data and center of mass into the file.                   */
   /********************************************************************************************************************/
-  // helper struct for holding arguments for particle data
-  struct ParticleCallbackArgs
-  {
-      H5Helper* helper;
-      unsigned recordNum;
-  };
-
-  // helper struct for holding arguments for COM data
-  struct ComCallbackArgs
-  {
-      H5Helper* helper;
-      float4* hCom;
-      unsigned recordNum;
-  };
-  
-  // callback function for writing particle data
-  auto writeParticleData = [](void* userData) -> void
-  {
-    ParticleCallbackArgs* args = static_cast<ParticleCallbackArgs*>(userData);
-    args->helper->writeParticleData(args->recordNum);
-    delete args;
-  };
-
-  // callback function for writing COM data
-  auto writeComData = [](void* userData) -> void
-  {
-    ComCallbackArgs* args = static_cast<ComCallbackArgs*>(userData);
-    args->helper->writeCom(*args->hCom, args->recordNum);
-    delete args;
-  };
 
   /********************************************************************************************************************/
 
@@ -279,63 +249,56 @@ int main(const int argc, char **argv)
     const unsigned srcIdx = s % 2;        // source particles index
     const unsigned dstIdx = (s + 1) % 2;  // destination particles index
     const unsigned currentRecordNum = getRecordNum(s);
-    const bool shouldOutput = shouldWrite(s);
 
     /******************************************************************************************************************/
     /*                TODO: GPU kernels invocation with correctly set dynamic memory size and stream                  */
     /******************************************************************************************************************/
     calculateVelocity<<<simGridDim, simBlockDim, sharedMemSize, calculateNewPos>>>(dParticles[srcIdx], dParticles[dstIdx], N, dt);
 
-    if (shouldOutput)
+    if (shouldWrite(s))
     {
-      // recording newPosCalculated event (safe to read)
       cudaEventRecord(newPosCalculated, calculateNewPos);
 
-      // waiting for the new position calculation to be finished
+      // calculating center of mass
+      centerOfMass<<<redGridDim, redBlockDim, redSharedMemSize, calculateCenterOfMass>>>(dParticles[srcIdx], dCenterOfMass, dLock, N);
+
+      cudaEventRecord(centerOfMassCalculated, calculateCenterOfMass);
       cudaStreamWaitEvent(calculateCenterOfMass, newPosCalculated, 0);
 
-      // clearing COM data
-      cudaMemsetAsync(dCenterOfMass, 0, sizeof(float4), calculateCenterOfMass);
-      cudaMemsetAsync(dLock, 0, sizeof(int), calculateCenterOfMass);
-
-      // calculating center of mass
-      centerOfMass<<<redGridDim, redBlockDim, redSharedMemSize, calculateCenterOfMass>>>(dParticles[dstIdx], dCenterOfMass, dLock, N);
-
-      // recording centerOfMassCalculated event
-      cudaEventRecord(centerOfMassCalculated, calculateCenterOfMass);
-
-      // waiting for the new position calculation to be finished
-      cudaStreamWaitEvent(copyData, newPosCalculated, 0);
-
-      // asynchronously copying new pos data from GPU
+      // copying particle data
       cudaMemcpyAsync(hParticles.posX, dParticles[dstIdx].posX, (N * sizeof(float)), cudaMemcpyDeviceToHost, copyData);
       cudaMemcpyAsync(hParticles.posY, dParticles[dstIdx].posY, (N * sizeof(float)), cudaMemcpyDeviceToHost, copyData);
       cudaMemcpyAsync(hParticles.posZ, dParticles[dstIdx].posZ, (N * sizeof(float)), cudaMemcpyDeviceToHost, copyData);
+      cudaMemcpyAsync(hParticles.velX, dParticles[dstIdx].velX, (N * sizeof(float)), cudaMemcpyDeviceToHost, copyData);
+      cudaMemcpyAsync(hParticles.velY, dParticles[dstIdx].velY, (N * sizeof(float)), cudaMemcpyDeviceToHost, copyData);
+      cudaMemcpyAsync(hParticles.velZ, dParticles[dstIdx].velZ, (N * sizeof(float)), cudaMemcpyDeviceToHost, copyData);
+      cudaMemcpyAsync(hParticles.weight, dParticles[dstIdx].weight, (N * sizeof(float)), cudaMemcpyDeviceToHost, copyData);
 
-      // waiting for the center of mass calculation to be finished
-      cudaStreamWaitEvent(copyData, centerOfMassCalculated, 0);
-
-      // asynchronously copying center of mass data from GPU
-      cudaMemcpyAsync(hCenterOfMass, dCenterOfMass, sizeof(float4), cudaMemcpyDeviceToHost, copyData);
+      cudaStreamSynchronize(copyData);
 
       // writing particle data
-      ParticleCallbackArgs* pArgs = new ParticleCallbackArgs
-      {
-        &h5Helper,
-        currentRecordNum
-      };
-      cudaLaunchHostFunc(copyData, writeParticleData, pArgs);
+      h5Helper.writeParticleData(getRecordNum(s));
+
+      cudaStreamWaitEvent(copyData, centerOfMassCalculated, 0);
+
+      // copying COM data
+      cudaMemcpyAsync(hCenterOfMass, dCenterOfMass, sizeof(float4), cudaMemcpyDeviceToHost, copyData);
+
+      cudaStreamSynchronize(copyData);
+
+      // dividing by total weight to get correct result
+      hCenterOfMass->x = hCenterOfMass->x / hCenterOfMass->w;
+      hCenterOfMass->y = hCenterOfMass->y / hCenterOfMass->w;
+      hCenterOfMass->z = hCenterOfMass->z / hCenterOfMass->w;
 
       // writing COM data
-      ComCallbackArgs* cArgs = new ComCallbackArgs
-      {
-        &h5Helper,
-        hCenterOfMass,
-        currentRecordNum
-      };
-      cudaLaunchHostFunc(copyData, writeComData, cArgs);
+      h5Helper.writeCom(*hCenterOfMass, getRecordNum(s));
 
+      // clearing COM data
+      cudaMemsetAsync(dCenterOfMass, 0, sizeof(float4), calculateCenterOfMass);
     }
+
+    cudaStreamWaitEvent(copyData, newPosCalculated, 0);
 
     /******************************************************************************************************************/
   }
@@ -380,6 +343,7 @@ int main(const int argc, char **argv)
 
   cudaMemcpy(hCenterOfMass, dCenterOfMass, sizeof(float4), cudaMemcpyDeviceToHost);
 
+  // dividing by total weight to get correct result
   hCenterOfMass->x = hCenterOfMass->x / hCenterOfMass->w;
   hCenterOfMass->y = hCenterOfMass->y / hCenterOfMass->w;
   hCenterOfMass->z = hCenterOfMass->z / hCenterOfMass->w;

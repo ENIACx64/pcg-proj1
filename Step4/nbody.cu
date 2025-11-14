@@ -74,16 +74,19 @@ __global__ void calculateVelocity(Particles pIn, Particles pOut, const unsigned 
       // tile index
       int tileIndex = i + threadIdx.x;
 
-      // transfering data to shared memory
-      posXShared[threadIdx.x] = pIn.posX[tileIndex];
-      posYShared[threadIdx.x] = pIn.posY[tileIndex];
-      posZShared[threadIdx.x] = pIn.posZ[tileIndex];
+      if (tileIndex < N)
+      {
+        // transfering data to shared memory
+        posXShared[threadIdx.x] = pIn.posX[tileIndex];
+        posYShared[threadIdx.x] = pIn.posY[tileIndex];
+        posZShared[threadIdx.x] = pIn.posZ[tileIndex];
 
-      velXShared[threadIdx.x] = pIn.velX[tileIndex];
-      velYShared[threadIdx.x] = pIn.velY[tileIndex];
-      velZShared[threadIdx.x] = pIn.velZ[tileIndex];
+        velXShared[threadIdx.x] = pIn.velX[tileIndex];
+        velYShared[threadIdx.x] = pIn.velY[tileIndex];
+        velZShared[threadIdx.x] = pIn.velZ[tileIndex];
 
-      weightShared[threadIdx.x] = pIn.weight[tileIndex];
+        weightShared[threadIdx.x] = pIn.weight[tileIndex];
+      }
 
       // necessary synchronization because of shared memory
       __syncthreads();
